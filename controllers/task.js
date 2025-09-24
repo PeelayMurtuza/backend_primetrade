@@ -72,15 +72,24 @@ exports.updateTask = async (req, res) => {
 exports.deleteTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
-    if (!task) return res.status(404).json({ success: false, message: "Task not found" });
+    if (!task)
+      return res.status(404).json({ success: false, message: "Task not found" });
 
-    if (req.user.role !== "admin" && task.user.toString() !== req.user.id) {
+    // Handle populated or unpopulated user
+    const taskUserId =
+      task.user && task.user._id ? task.user._id.toString() : task.user.toString();
+
+    if (req.user.role !== "admin" && taskUserId !== req.user.id) {
       return res.status(403).json({ success: false, message: "Access denied" });
     }
 
-    await task.remove();
+    await Task.findByIdAndDelete(task._id);
+
     res.json({ success: true, message: "Task deleted successfully" });
   } catch (error) {
+    console.error("Delete Task Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
